@@ -1,0 +1,81 @@
+(deftemplate position
+  (slot x)
+  (slot y))
+
+(deftemplate monkey
+  (slot location)
+  (slot has-stick (default no))
+  (slot on-box (default no)))
+
+(deftemplate box
+  (slot location))
+
+(deftemplate bananas
+  (slot location)
+  (slot reachable (default no)))
+
+(deffacts initial-state
+  (position (x 1) (y 1)) ;; Posición inicial del mono
+  (monkey (location (x 1) (y 1)))
+  (box (location (x 2) (y 2)))
+  (bananas (location (x 3) (y 3)))
+  (position (x 0) (y 0)) ;; El palo está en (0,0)
+)
+
+(defrule move-monkey
+  (declare (salience 10))
+  ?m <- (monkey (location ?loc))
+  (position (x ?x) (y ?y))
+  (test (not (eq ?loc (create$ ?x ?y))))
+  =>
+  (modify ?m (location (create$ ?x ?y)))
+  (printout t "El mono se mueve a (" ?x ", " ?y ")" crlf))
+
+(defrule pick-stick
+  (monkey (location (x 0) (y 0)) (has-stick no))
+  =>
+  (modify ?m (has-stick yes))
+  (printout t "El mono toma el palo" crlf))
+
+(defrule push-box
+  (monkey (location ?loc) (has-stick yes))
+  (box (location ?loc))
+  (position (x ?x) (y ?y))
+  (test (not (eq ?loc (create$ ?x ?y))))
+  =>
+  (modify ?b (location (create$ ?x ?y)))
+  (printout t "El mono empuja la caja a (" ?x ", " ?y ")" crlf))
+
+(defrule climb-box
+  (monkey (location ?loc) (on-box no))
+  (box (location ?loc))
+  =>
+  (modify ?m (on-box yes))
+  (printout t "El mono se sube a la caja" crlf))
+
+(defrule reach-bananas
+  (monkey (location ?loc) (on-box yes))
+  (bananas (location ?loc))
+  =>
+  (printout t "El mono alcanza las bananas!" crlf)
+  (halt))
+
+(defrule check-reachable-bananas
+  (monkey (location ?loc))
+  (box (location ?loc))
+  (bananas (location ?loc))
+  =>
+  (modify ?b (reachable yes)))
+
+(defrule print-status
+  (monkey (location ?loc) (has-stick ?stick) (on-box ?onbox))
+  (box (location ?boxloc))
+  (bananas (location ?banloc) (reachable ?reachable))
+  =>
+  (printout t "Estado actual:" crlf
+            "Mono: " ?loc ", Tiene palo: " ?stick ", Sobre la caja: " ?onbox crlf
+            "Caja: " ?boxloc crlf
+            "Bananas: " ?banloc ", Alcanzables: " ?reachable crlf))
+  
+(reset)
+(run)
